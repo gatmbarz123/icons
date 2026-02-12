@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LimitlessCNC | Environment Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        const ICONS = {
+            'website': 'icons/limitless_website_icon.png',
+            'aws': 'icons/aws.svg',
+            'datadog': 'icons/Datadog--Streamline-Svg-Logos.svg',
+            'gcp': 'icons/icons8-google-cloud.svg',
+            'clearml': 'icons/clearml-icon.png',
+            'argocd': 'icons/Argo-CD.svg',
+            'vpn-admin': 'icons/openvpn-svgrepo-com.svg',
+            'vpn-user': 'icons/openvpn-svgrepo-com.svg'
+        };
+        
+        const USE_CUSTOM_ICONS = true;
+        
+        function getIconHTML(iconKey, faIcon, faClass) {
+            if (USE_CUSTOM_ICONS && ICONS[iconKey]) {
+                return `<img src="${ICONS[iconKey]}" alt="${iconKey}" width="24" height="24">`;
+            } else {
+                return `<i class="${faIcon} ${faClass}"></i>`;
+            }
+        }
+    </script>
+    
+    <style>
+        :root {
+            --bg-primary: #13131f;
+            --bg-secondary: #1a1a2e;
+            --bg-card: rgba(30, 30, 50, 0.7);
+            --bg-hover: rgba(45, 45, 70, 0.85);
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8c8;
+            --text-muted: #7a7a8a;
+            --border-subtle: rgba(255, 255, 255, 0.1);
+            --border-hover: rgba(255, 255, 255, 0.2);
+            
+            /* Environment Colors */
+            --color-prod: #00f0ff;
+            --color-prod-glow: rgba(0, 240, 255, 0.3);
+            --color-dev: #ff6b9d;
+            --color-dev-glow: rgba(255, 107, 157, 0.3);
+            --color-stg: #ffd700;
+            --color-stg-glow: rgba(255, 215, 0, 0.3);
+            --color-general: #a78bfa;
+            --color-general-glow: rgba(167, 139, 250, 0.3);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Animated Background Grid */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        /* Gradient Orbs */
+        .gradient-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.25;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: var(--color-prod);
+            top: -200px;
+            right: -100px;
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: var(--color-dev);
+            bottom: -150px;
+            left: -100px;
+            animation: float 25s ease-in-out infinite reverse;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(30px, -30px); }
+            50% { transform: translate(-20px, 20px); }
+            75% { transform: translate(20px, 10px); }
+        }
+        
+        /* Noise Texture Overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(19, 19, 31, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 20px 0;
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .title-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--color-prod), var(--color-dev));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0, 240, 255, 0.3);
+            overflow: hidden;
+            padding: 6px;
+        }
+        
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: brightness(1.1);
+        }
+        
+        .title-text h1 {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fff 0%, #a0a0b0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .title-text p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        /* Search Bar */
+        .search-container {
+            position: relative;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 14px 20px 14px 50px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--color-general);
+            box-shadow: 0 0 20px var(--color-general-glow);
+        }
+        
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+        
+        .search-shortcut {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 4px 10px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        /* Main Content */
+        .main-content {
+            position: relative;
+            z-index: 10;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        /* Environment Sections */
+        .env-section {
+            margin-bottom: 40px;
+            animation: fadeInUp 0.6s ease forwards;
+            opacity: 0;
+        }
+        
+        .env-section:nth-child(1) { animation-delay: 0.1s; }
+        .env-section:nth-child(2) { animation-delay: 0.2s; }
+        .env-section:nth-child(3) { animation-delay: 0.3s; }
+        .env-section:nth-child(4) { animation-delay: 0.4s; }
+        .env-section:nth-child(5) { animation-delay: 0.5s; }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .env-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .env-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .env-badge i {
+            font-size: 16px;
+        }
+        
+        .env-badge span {
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Environment-specific badge colors */
+        .prod .env-badge {
+            border-color: var(--color-prod);
+            box-shadow: 0 0 15px var(--color-prod-glow);
+        }
+        .prod .env-badge i { color: var(--color-prod); }
+        .prod .env-badge span { color: var(--color-prod); }
+        
+        .dev .env-badge {
+            border-color: var(--color-dev);
+            box-shadow: 0 0 15px var(--color-dev-glow);
+        }
+        .dev .env-badge i { color: var(--color-dev); }
+        .dev .env-badge span { color: var(--color-dev); }
+        
+        .stg .env-badge {
+            border-color: var(--color-stg);
+            box-shadow: 0 0 15px var(--color-stg-glow);
+        }
+        .stg .env-badge i { color: var(--color-stg); }
+        .stg .env-badge span { color: var(--color-stg); }
+        
+        .general .env-badge {
+            border-color: var(--color-general);
+            box-shadow: 0 0 15px var(--color-general-glow);
+        }
+        .general .env-badge i { color: var(--color-general); }
+        .general .env-badge span { color: var(--color-general); }
+        
+        .env-count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        
+        /* Links Grid */
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+        
+        .link-card {
+            display: flex;
+            align-items: stretch;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            color: inherit;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+        
+        .link-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .prod .link-card::before { background: var(--color-prod); }
+        .dev .link-card::before { background: var(--color-dev); }
+        .stg .link-card::before { background: var(--color-stg); }
+        .general .link-card::before { background: var(--color-general); }
+        
+        .link-card:hover {
+            background: var(--bg-hover);
+            transform: translateY(-3px);
+        }
+        
+        .prod .link-card:hover {
+            border-color: var(--color-prod);
+            box-shadow: 0 8px 30px var(--color-prod-glow);
+        }
+        
+        .dev .link-card:hover {
+            border-color: var(--color-dev);
+            box-shadow: 0 8px 30px var(--color-dev-glow);
+        }
+        
+        .stg .link-card:hover {
+            border-color: var(--color-stg);
+            box-shadow: 0 8px 30px var(--color-stg-glow);
+        }
+        
+        .general .link-card:hover {
+            border-color: var(--color-general);
+            box-shadow: 0 8px 30px var(--color-general-glow);
+        }
+        
+        .link-card:hover::before {
+            opacity: 1;
+        }
+        
+        .link-icon-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            background: rgba(255, 255, 255, 0.03);
+            border-right: 1px solid var(--border-subtle);
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .link-card:hover .link-icon-wrapper {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .link-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            font-size: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .link-icon img {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+            filter: brightness(1.2);
+        }
+        
+        .prod .link-icon {
+            background: rgba(0, 240, 255, 0.1);
+            color: var(--color-prod);
+        }
+        
+        .dev .link-icon {
+            background: rgba(255, 107, 157, 0.1);
+            color: var(--color-dev);
+        }
+        
+        .stg .link-icon {
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--color-stg);
+        }
+        
+        .general .link-icon {
+            background: rgba(167, 139, 250, 0.1);
+            color: var(--color-general);
+        }
+        
+        .link-card:hover .link-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+        
+        .link-content {
+            flex: 1;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+        }
+        
+        .link-title {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: all 0.3s ease;
+        }
+        
+        .link-card:hover .link-title {
+            transform: translateX(4px);
+        }
+        
+        .link-url {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .link-actions {
+            display: flex;
+            align-items: center;
+            padding-right: 15px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .link-card:hover .link-actions {
+            opacity: 1;
+        }
+        
+        .copy-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .copy-btn:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        
+        .copy-btn.copied {
+            color: #4ade80;
+        }
+        
+        /* Hidden state for search */
+        .link-card.hidden {
+            display: none;
+        }
+        
+        .env-section.hidden {
+            display: none;
+        }
+        
+        /* No results message */
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        
+        .no-results i {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .no-results p {
+            font-size: 16px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0 20px;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .links-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .title-text h1 {
+                font-size: 22px;
+            }
+            
+            .search-shortcut {
+                display: none;
+            }
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-subtle);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-hover);
+        }
+    </style>
+</head>
+<body>
+    <div class="gradient-orb orb-1"></div>
+    <div class="gradient-orb orb-2"></div>
+    
+    <header class="header">
+        <div class="header-content">
+            <div class="title-section">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="icons/limitless_website_icon.png" alt="LimitlessCNC Logo">
+                    </div>
+                    <div class="title-text">
+                        <h1>LimitlessCNC</h1>
+                        <p>Environment Dashboard</p>
+                    </div>
+                </div>
+                
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search environments, services..." autocomplete="off">
+                    <span class="search-shortcut">⌘K</span>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <main class="main-content">
+        <!-- General Resources -->
+        <section class="env-section general" data-env="general">
+            <div class="env-header">
+                <div class="env-badge">
+                    <i class="fas fa-globe"></i>
+                    <span>General Resources</span>
+                </div>
+                <span class="env-count">5 links</span>
+            </div>
+            
+            <div class="links-grid">
+                <a href="https://limitlesscnc.ai" class="link-card" target="_blank" data-search="limitlesscnc website">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="website-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">LimitlessCNC Website</div>
+                        <div class="link-url">limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://limitlesscnc.ai')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://limitlesscnc.awsapps.com/start/" class="link-card" target="_blank" data-search="aws access portal amazon">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="aws-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">AWS Access Portal</div>
+                        <div class="link-url">limitlesscnc.awsapps.com/start</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://limitlesscnc.awsapps.com/start/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://app.datadoghq.eu/logs" class="link-card" target="_blank" data-search="datadog logs monitoring">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="datadog-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">Datadog</div>
+                        <div class="link-url">app.datadoghq.eu/logs</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://app.datadoghq.eu/logs')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://console.cloud.google.com/" class="link-card" target="_blank" data-search="google cloud console gcp">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="gcp-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">Google Cloud Console</div>
+                        <div class="link-url">console.cloud.google.com</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://console.cloud.google.com/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://app.server.clearml.limitlesscnc.ai/" class="link-card" target="_blank" data-search="clearml machine learning ml">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="clearml-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">ClearML</div>
+                        <div class="link-url">app.server.clearml.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://app.server.clearml.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+            </div>
+        </section>
+        
+        <!-- Prod-EU -->
+        <section class="env-section prod" data-env="prod">
+            <div class="env-header">
+                <div class="env-badge">
+                    <i class="fas fa-rocket"></i>
+                    <span>Production EU</span>
+                </div>
+                <span class="env-count">4 links</span>
+            </div>
+            
+            <div class="links-grid">
+                <a href="https://argocd.prod.euc1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="argocd kubernetes deployment">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="argocd-prod-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">ArgoCD</div>
+                        <div class="link-url">argocd.prod.euc1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://argocd.prod.euc1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://vpn.prod.euc1.limitlesscnc.ai/admin" class="link-card" target="_blank" data-search="openvpn admin">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="vpn-admin-prod-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">OpenVPN Admin</div>
+                        <div class="link-url">vpn.prod.euc1.limitlesscnc.ai/admin</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://vpn.prod.euc1.limitlesscnc.ai/admin')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://vpn.prod.euc1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="openvpn user">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="vpn-user-prod-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">OpenVPN User</div>
+                        <div class="link-url">vpn.prod.euc1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://vpn.prod.euc1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://web.euc1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="web website">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="web-prod-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">Web</div>
+                        <div class="link-url">web.euc1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://web.euc1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+            </div>
+        </section>
+        
+        <!-- Prod-US -->
+        <section class="env-section prod" data-env="prod">
+            <div class="env-header">
+                <div class="env-badge">
+                    <i class="fas fa-rocket"></i>
+                    <span>Production US</span>
+                </div>
+                <span class="env-count">4 links</span>
+            </div>
+            
+            <div class="links-grid">
+                <a href="https://argocd.prod.use1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="argocd kubernetes deployment">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="argocd-prod-us-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">ArgoCD</div>
+                        <div class="link-url">argocd.prod.use1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://argocd.prod.use1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://web.use1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="web website">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="web-prod-us-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">Website</div>
+                        <div class="link-url">web.use1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://web.use1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://vpn.prod.use1.limitlesscnc.ai/admin/" class="link-card" target="_blank" data-search="openvpn admin">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="vpn-admin-prod-us-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">OpenVPN Admin</div>
+                        <div class="link-url">vpn.prod.use1.limitlesscnc.ai/admin</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://vpn.prod.use1.limitlesscnc.ai/admin/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://vpn.prod.use1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="openvpn user">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="vpn-user-prod-us-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">OpenVPN User</div>
+                        <div class="link-url">vpn.prod.use1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://vpn.prod.use1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+            </div>
+        </section>
+        
+        <!-- Demo -->
+        <section class="env-section prod" data-env="prod">
+            <div class="env-header">
+                <div class="env-badge">
+                    <i class="fas fa-flask"></i>
+                    <span>Demo</span>
+                </div>
+                <span class="env-count">4 links</span>
+            </div>
+            
+            <div class="links-grid">
+                <a href="https://argocd.demo.euc1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="argocd kubernetes deployment">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="argocd-demo-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">ArgoCD</div>
+                        <div class="link-url">argocd.demo.euc1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://argocd.demo.euc1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://web.demo.euc1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="web website">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="web-demo-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">Website</div>
+                        <div class="link-url">web.demo.euc1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://web.demo.euc1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://vpn.demo.euc1.limitlesscnc.ai/admin/" class="link-card" target="_blank" data-search="openvpn admin">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="vpn-admin-demo-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">OpenVPN Admin</div>
+                        <div class="link-url">vpn.demo.euc1.limitlesscnc.ai/admin</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://vpn.demo.euc1.limitlesscnc.ai/admin/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://vpn.demo.euc1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="openvpn user">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="vpn-user-demo-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">OpenVPN User</div>
+                        <div class="link-url">vpn.demo.euc1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://vpn.demo.euc1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+            </div>
+        </section>
+        
+        <!-- Development -->
+        <section class="env-section dev" data-env="dev">
+            <div class="env-header">
+                <div class="env-badge">
+                    <i class="fas fa-laptop-code"></i>
+                    <span>Development</span>
+                </div>
+                <span class="env-count">8 links</span>
+            </div>
+            
+            <div class="links-grid">
+                <a href="https://argocd.dev.euc1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="argocd kubernetes deployment">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="argocd-dev-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">ArgoCD</div>
+                        <div class="link-url">argocd.dev.euc1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://argocd.dev.euc1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://web.dev.euc1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="web website">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="web-dev-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">Website</div>
+                        <div class="link-url">web.dev.euc1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://web.dev.euc1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://vpn.euc1.limitlesscnc.ai/admin" class="link-card" target="_blank" data-search="openvpn admin">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="vpn-admin-dev-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">OpenVPN Admin</div>
+                        <div class="link-url">vpn.euc1.limitlesscnc.ai/admin</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://vpn.euc1.limitlesscnc.ai/admin')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://vpn.euc1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="openvpn user">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="vpn-user-dev-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">OpenVPN User</div>
+                        <div class="link-url">vpn.euc1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://vpn.euc1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://vpn-dev-stg.euc1.limitlesscnc.ai/admin/" class="link-card" target="_blank" data-search="openvpn admin 25 connections">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="vpn-25-admin-dev-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">VPN 25 Conn Admin</div>
+                        <div class="link-url">vpn-dev-stg.euc1.limitlesscnc.ai/admin</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://vpn-dev-stg.euc1.limitlesscnc.ai/admin/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://vpn-dev-stg.euc1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="openvpn user 25 connections">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="vpn-25-user-dev-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">VPN 25 Conn User</div>
+                        <div class="link-url">vpn-dev-stg.euc1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://vpn-dev-stg.euc1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://vpn-windows.euc1.limitlesscnc.ai/admin/" class="link-card" target="_blank" data-search="openvpn admin windows">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="vpn-win-admin-dev-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">VPN Windows Admin</div>
+                        <div class="link-url">vpn-windows.euc1.limitlesscnc.ai/admin</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://vpn-windows.euc1.limitlesscnc.ai/admin/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://vpn-windows.euc1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="openvpn user windows">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="vpn-win-user-dev-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">VPN Windows User</div>
+                        <div class="link-url">vpn-windows.euc1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://vpn-windows.euc1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+            </div>
+        </section>
+        
+        <!-- Staging -->
+        <section class="env-section stg" data-env="stg">
+            <div class="env-header">
+                <div class="env-badge">
+                    <i class="fas fa-vial"></i>
+                    <span>Staging</span>
+                </div>
+                <span class="env-count">2 links</span>
+            </div>
+            
+            <div class="links-grid">
+                <a href="https://argocd.stg.euc1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="argocd kubernetes deployment">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="argocd-stg-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">ArgoCD</div>
+                        <div class="link-url">argocd.stg.euc1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://argocd.stg.euc1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+                
+                <a href="https://web.stg.euc1.limitlesscnc.ai/" class="link-card" target="_blank" data-search="web website">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="web-stg-icon"></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">Website</div>
+                        <div class="link-url">web.stg.euc1.limitlesscnc.ai</div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="copy-btn" onclick="copyUrl(event, 'https://web.stg.euc1.limitlesscnc.ai/')" title="Copy URL">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </a>
+            </div>
+        </section>
+        
+        <div class="no-results" id="noResults" style="display: none;">
+            <i class="fas fa-search"></i>
+            <p>No matching environments or services found</p>
+        </div>
+    </main>
+    
+    <script>
+        // Initialize Icons
+        document.getElementById('website-icon').innerHTML = getIconHTML('website', 'fas fa-globe', 'icon-web');
+        document.getElementById('aws-icon').innerHTML = getIconHTML('aws', 'fab fa-aws', 'icon-aws');
+        document.getElementById('datadog-icon').innerHTML = getIconHTML('datadog', 'fas fa-dog', 'icon-web');
+        document.getElementById('gcp-icon').innerHTML = getIconHTML('gcp', 'fas fa-cloud', 'icon-web');
+        document.getElementById('clearml-icon').innerHTML = getIconHTML('clearml', 'fas fa-robot', 'icon-web');
+        
+        document.getElementById('argocd-prod-icon').innerHTML = getIconHTML('argocd', 'fas fa-ship', 'icon-argocd');
+        document.getElementById('vpn-admin-prod-icon').innerHTML = getIconHTML('vpn-admin', 'fas fa-shield-alt', 'icon-vpn');
+        document.getElementById('vpn-user-prod-icon').innerHTML = getIconHTML('vpn-user', 'fas fa-user-shield', 'icon-vpn');
+        document.getElementById('web-prod-icon').innerHTML = getIconHTML('website', 'fas fa-globe', 'icon-web');
+        
+        document.getElementById('argocd-prod-us-icon').innerHTML = getIconHTML('argocd', 'fas fa-ship', 'icon-argocd');
+        document.getElementById('web-prod-us-icon').innerHTML = getIconHTML('website', 'fas fa-globe', 'icon-web');
+        document.getElementById('vpn-admin-prod-us-icon').innerHTML = getIconHTML('vpn-admin', 'fas fa-shield-alt', 'icon-vpn');
+        document.getElementById('vpn-user-prod-us-icon').innerHTML = getIconHTML('vpn-user', 'fas fa-user-shield', 'icon-vpn');
+        
+        document.getElementById('argocd-demo-icon').innerHTML = getIconHTML('argocd', 'fas fa-ship', 'icon-argocd');
+        document.getElementById('web-demo-icon').innerHTML = getIconHTML('website', 'fas fa-globe', 'icon-web');
+        document.getElementById('vpn-admin-demo-icon').innerHTML = getIconHTML('vpn-admin', 'fas fa-shield-alt', 'icon-vpn');
+        document.getElementById('vpn-user-demo-icon').innerHTML = getIconHTML('vpn-user', 'fas fa-user-shield', 'icon-vpn');
+        
+        document.getElementById('argocd-dev-icon').innerHTML = getIconHTML('argocd', 'fas fa-ship', 'icon-argocd');
+        document.getElementById('web-dev-icon').innerHTML = getIconHTML('website', 'fas fa-globe', 'icon-web');
+        document.getElementById('vpn-admin-dev-icon').innerHTML = getIconHTML('vpn-admin', 'fas fa-shield-alt', 'icon-vpn');
+        document.getElementById('vpn-user-dev-icon').innerHTML = getIconHTML('vpn-user', 'fas fa-user-shield', 'icon-vpn');
+        document.getElementById('vpn-25-admin-dev-icon').innerHTML = getIconHTML('vpn-admin', 'fas fa-shield-alt', 'icon-vpn');
+        document.getElementById('vpn-25-user-dev-icon').innerHTML = getIconHTML('vpn-user', 'fas fa-user-shield', 'icon-vpn');
+        document.getElementById('vpn-win-admin-dev-icon').innerHTML = getIconHTML('vpn-admin', 'fas fa-shield-alt', 'icon-vpn');
+        document.getElementById('vpn-win-user-dev-icon').innerHTML = getIconHTML('vpn-user', 'fas fa-user-shield', 'icon-vpn');
+        
+        document.getElementById('argocd-stg-icon').innerHTML = getIconHTML('argocd', 'fas fa-ship', 'icon-argocd');
+        document.getElementById('web-stg-icon').innerHTML = getIconHTML('website', 'fas fa-globe', 'icon-web');
+        
+        // Copy URL functionality
+        function copyUrl(event, url) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = event.currentTarget;
+                const icon = btn.querySelector('i');
+                
+                btn.classList.add('copied');
+                icon.classList.remove('fa-copy');
+                icon.classList.add('fa-check');
+                
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    icon.classList.remove('fa-check');
+                    icon.classList.add('fa-copy');
+                }, 1500);
+            });
+        }
+        
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const noResults = document.getElementById('noResults');
+        const allCards = document.querySelectorAll('.link-card');
+        const allSections = document.querySelectorAll('.env-section');
+        
+        function filterLinks(searchTerm) {
+            const term = searchTerm.toLowerCase().trim();
+            let hasResults = false;
+            
+            allCards.forEach(card => {
+                const searchData = card.getAttribute('data-search') || '';
+                const title = card.querySelector('.link-title').textContent.toLowerCase();
+                const url = card.querySelector('.link-url').textContent.toLowerCase();
+                
+                if (searchData.includes(term) || title.includes(term) || url.includes(term)) {
+                    card.classList.remove('hidden');
+                    hasResults = true;
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+            
+            // Hide/show sections based on visible cards
+            allSections.forEach(section => {
+                const visibleCards = section.querySelectorAll('.link-card:not(.hidden)');
+                if (visibleCards.length === 0) {
+                    section.classList.add('hidden');
+                } else {
+                    section.classList.remove('hidden');
+                    // Update count
+                    const countEl = section.querySelector('.env-count');
+                    if (countEl) {
+                        countEl.textContent = `${visibleCards.length} link${visibleCards.length !== 1 ? 's' : ''}`;
+                    }
+                }
+            });
+            
+            // Show/hide no results message
+            if (hasResults) {
+                noResults.style.display = 'none';
+            } else {
+                noResults.style.display = 'block';
+            }
+        }
+        
+        searchInput.addEventListener('input', (e) => {
+            filterLinks(e.target.value);
+        });
+        
+        // Keyboard shortcut for search (Cmd/Ctrl + K)
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+            
+            if (e.key === 'Escape') {
+                searchInput.value = '';
+                filterLinks('');
+                searchInput.blur();
+            }
+        });
+        
+        // Focus search on load
+        window.addEventListener('load', () => {
+            searchInput.focus();
+        });
+    </script>
+</body>
+</html>
