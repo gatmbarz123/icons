@@ -353,6 +353,7 @@
         .general .env-badge i { color: var(--color-general); }
         .general .env-badge span { color: var(--color-general); }
         
+        
         .env-count {
             font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
@@ -656,10 +657,23 @@
                     <i class="fas fa-globe"></i>
                     <span>General Resources</span>
                 </div>
-                <span class="env-count">5 links</span>
+                <span class="env-count">6 links</span>
             </div>
             
             <div class="links-grid">
+                <a href="ec2.html" class="link-card" data-search="ec2 windows instances scheduler start stop">
+                    <div class="link-icon-wrapper">
+                        <div class="link-icon" id="ec2-link-icon"><i class="fab fa-windows" style="font-size:20px;color:var(--color-general)"></i></div>
+                    </div>
+                    <div class="link-content">
+                        <div class="link-title">EC2 Windows Instances</div>
+                        <div class="link-url">Start/Stop with scheduler override</div>
+                    </div>
+                    <div class="link-actions">
+                        <span style="color:var(--text-muted);font-size:12px"><i class="fas fa-arrow-right"></i></span>
+                    </div>
+                </a>
+                
                 <a href="https://limitlesscnc.ai" class="link-card" target="_blank" data-search="limitlesscnc website">
                     <div class="link-icon-wrapper">
                         <div class="link-icon" id="website-icon"></div>
@@ -1131,7 +1145,7 @@
                 </a>
             </div>
         </section>
-        
+
         <div class="no-results" id="noResults" style="display: none;">
             <i class="fas fa-search"></i>
             <p>No matching environments or services found</p>
@@ -1262,6 +1276,7 @@
         window.addEventListener('load', () => {
             searchInput.focus();
         });
+
     </script>
 </body>
 </html>

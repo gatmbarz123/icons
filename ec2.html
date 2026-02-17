@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EC2 Windows Instances | LimitlessCNC</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-primary: #0c0c18;
+            --bg-secondary: #141425;
+            --bg-card: rgba(22, 22, 44, 0.8);
+            --bg-card-hover: rgba(30, 30, 55, 0.9);
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8d0;
+            --text-muted: #6b6b85;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.15);
+            --color-green: #10b981;
+            --color-green-glow: rgba(16, 185, 129, 0.25);
+            --color-red: #ef4444;
+            --color-red-glow: rgba(239, 68, 68, 0.25);
+            --color-blue: #3b82f6;
+            --color-amber: #f59e0b;
+            --color-yellow: #eab308;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .gradient-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(140px);
+            opacity: 0.2;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .orb-1 {
+            width: 700px; height: 700px;
+            background: var(--color-green);
+            top: -300px; right: -200px;
+            animation: floatOrb 25s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 500px; height: 500px;
+            background: var(--color-blue);
+            bottom: -200px; left: -150px;
+            animation: floatOrb 30s ease-in-out infinite reverse;
+        }
+
+        @keyframes floatOrb {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(40px, -30px); }
+            50% { transform: translate(-30px, 25px); }
+            75% { transform: translate(25px, 15px); }
+        }
+
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(12, 12, 24, 0.92);
+            backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .header-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 18px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            font-family: 'Space Grotesk', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+            border-color: var(--border-hover);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-icon {
+            width: 42px; height: 42px;
+            background: linear-gradient(135deg, var(--color-green), #059669);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            box-shadow: 0 4px 20px var(--color-green-glow);
+        }
+
+        .header-title h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fff, #a0a0c0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-title p {
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .refresh-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-family: 'Space Grotesk', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+            border-color: var(--border-hover);
+        }
+
+        .refresh-btn.spinning i {
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .header-badge {
+            padding: 6px 14px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--color-green);
+            font-weight: 500;
+        }
+
+        /* Main */
+        .main {
+            position: relative;
+            z-index: 10;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+
+        /* Loading State */
+        .loading-state {
+            text-align: center;
+            padding: 60px 0;
+            color: var(--text-muted);
+        }
+
+        .loading-state i {
+            font-size: 32px;
+            color: var(--color-green);
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        /* Error Banner */
+        .error-banner {
+            display: none;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 22px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 14px;
+            margin-bottom: 20px;
+        }
+
+        .error-banner.show { display: flex; }
+
+        .error-banner i {
+            font-size: 18px;
+            color: var(--color-red);
+            flex-shrink: 0;
+        }
+
+        .error-banner p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Instance Cards */
+        .instances-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .instance-card {
+            display: flex;
+            align-items: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 0;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(12px);
+            animation: fadeIn 0.5s ease backwards;
+        }
+
+        .instance-card:nth-child(1) { animation-delay: 0.05s; }
+        .instance-card:nth-child(2) { animation-delay: 0.1s; }
+        .instance-card:nth-child(3) { animation-delay: 0.15s; }
+        .instance-card:nth-child(4) { animation-delay: 0.2s; }
+        .instance-card:nth-child(5) { animation-delay: 0.25s; }
+        .instance-card:nth-child(6) { animation-delay: 0.3s; }
+
+        .instance-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(16, 185, 129, 0.3);
+            box-shadow: 0 8px 40px rgba(16, 185, 129, 0.08);
+            transform: translateX(4px);
+        }
+
+        .card-accent {
+            width: 4px;
+            align-self: stretch;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .card-accent.running { background: linear-gradient(180deg, var(--color-green), #059669); opacity: 1; }
+        .card-accent.stopped { background: var(--color-red); opacity: 0.5; }
+        .card-accent.pending { background: var(--color-amber); opacity: 0.8; animation: pulse-accent 1.5s ease-in-out infinite; }
+        .card-accent.default { background: var(--text-muted); opacity: 0.3; }
+
+        @keyframes pulse-accent {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        .card-icon {
+            width: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-icon-inner {
+            width: 42px; height: 42px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--color-green);
+            transition: all 0.3s ease;
+        }
+
+        .instance-card:hover .card-icon-inner {
+            background: rgba(16, 185, 129, 0.15);
+            transform: scale(1.05);
+        }
+
+        .card-info {
+            flex: 1;
+            padding: 18px 0;
+            min-width: 0;
+        }
+
+        .card-name-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .card-name {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+
+        /* State Badge */
+        .state-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .state-badge.running {
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--color-green);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .state-badge.stopped {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-red);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+
+        .state-badge.pending, .state-badge.stopping {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-amber);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        .state-badge .dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .state-badge.running .dot { animation: pulse-dot 2s infinite; }
+        .state-badge.pending .dot, .state-badge.stopping .dot { animation: pulse-dot 0.8s infinite; }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .card-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.04);
+            padding: 3px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .card-override {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--color-amber);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Actions */
+        .card-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 20px 16px 12px;
+            flex-shrink: 0;
+        }
+
+        .override-select {
+            padding: 10px 32px 10px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b85' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            transition: all 0.2s ease;
+        }
+
+        .override-select:hover { border-color: var(--color-green); color: var(--text-primary); }
+        .override-select:focus { outline: none; border-color: var(--color-green); box-shadow: 0 0 0 3px var(--color-green-glow); }
+
+        .action-btn {
+            padding: 10px 20px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .action-btn:hover { transform: translateY(-2px); }
+        .action-btn:active { transform: translateY(0); }
+        .action-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+        .start-btn { border-color: rgba(16, 185, 129, 0.3); }
+        .start-btn:hover:not(:disabled) {
+            background: rgba(16, 185, 129, 0.12);
+            border-color: var(--color-green);
+            color: var(--color-green);
+            box-shadow: 0 4px 20px var(--color-green-glow);
+        }
+
+        .stop-btn { border-color: rgba(239, 68, 68, 0.25); }
+        .stop-btn:hover:not(:disabled) {
+            background: rgba(239, 68, 68, 0.12);
+            border-color: var(--color-red);
+            color: var(--color-red);
+            box-shadow: 0 4px 20px var(--color-red-glow);
+        }
+
+        .action-btn .spinner {
+            display: none;
+            width: 14px; height: 14px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        .action-btn.loading .spinner { display: inline-block; }
+        .action-btn.loading .btn-icon { display: none; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%) translateY(30px);
+            padding: 14px 28px;
+            border-radius: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            backdrop-filter: blur(16px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 320px;
+            justify-content: center;
+        }
+
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.success { background: rgba(16, 185, 129, 0.92); color: #fff; box-shadow: 0 8px 40px rgba(16, 185, 129, 0.4); }
+        .toast.error { background: rgba(239, 68, 68, 0.92); color: #fff; box-shadow: 0 8px 40px rgba(239, 68, 68, 0.4); }
+        .toast.info { background: rgba(59, 130, 246, 0.92); color: #fff; box-shadow: 0 8px 40px rgba(59, 130, 246, 0.4); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .instance-card { flex-wrap: wrap; }
+            .card-actions { width: 100%; padding: 0 16px 16px; justify-content: flex-end; }
+            .card-info { padding: 16px 16px 8px; }
+            .card-icon { width: 56px; }
+        }
+
+        @media (max-width: 600px) {
+            .header-inner { padding: 14px 16px; }
+            .main { padding: 20px 16px; }
+            .header-badge { display: none; }
+            .card-meta { flex-direction: column; align-items: flex-start; gap: 6px; }
+            .card-actions { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="gradient-orb orb-1"></div>
+    <div class="gradient-orb orb-2"></div>
+
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-left">
+                <a href="index.html" class="back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Dashboard
+                </a>
+                <div class="header-title">
+                    <div class="header-icon">
+                        <i class="fab fa-windows"></i>
+                    </div>
+                    <div>
+                        <h1>EC2 Windows Instances</h1>
+                        <p>eu-central-1 · Start/Stop with scheduler override</p>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="refresh-btn" onclick="refreshInstances()" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh
+                </button>
+                <div class="header-badge" id="instanceCount">
+                    <i class="fas fa-circle" style="font-size: 7px; margin-right: 4px;"></i>
+                    Loading...
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="error-banner" id="errorBanner">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p id="errorMessage"></p>
+        </div>
+
+        <div class="loading-state" id="loadingState">
+            <i class="fas fa-spinner"></i>
+            <p>Loading instances...</p>
+        </div>
+
+        <div class="instances-list" id="instancesList"></div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Base URL for API calls — empty string = same origin (relative URLs)
+        const API_BASE = '';
+
+        const FLAGS = {
+            'il': 'icons/israel.png',
+            'in': 'icons/india.png',
+            'nz': 'icons/new-zealand.png',
+        };
+
+        // ─── Toast ──────────────────────────────────────────────────────────
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : 'info-circle'}"></i> ${message}`;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => { toast.className = 'toast'; }, 3500);
+        }
+
+        function showError(msg) {
+            const banner = document.getElementById('errorBanner');
+            document.getElementById('errorMessage').textContent = msg;
+            banner.classList.add('show');
+            setTimeout(() => banner.classList.remove('show'), 8000);
+        }
+
+        // ─── API Calls ──────────────────────────────────────────────────────
+        async function fetchInstances() {
+            const resp = await fetch(`${API_BASE}/api/instances`);
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+                throw new Error(err.detail || 'Failed to fetch instances');
+            }
+            return (await resp.json()).instances;
+        }
+
+        async function startInstance(instanceId, hours) {
+            const resp = await fetch(`${API_BASE}/api/instances/${instanceId}/start`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hours }),
+            });
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+                throw new Error(err.detail || 'Failed to start instance');
+            }
+            return resp.json();
+        }
+
+        async function stopInstance(instanceId) {
+            const resp = await fetch(`${API_BASE}/api/instances/${instanceId}/stop`, {
+                method: 'POST',
+            });
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+                throw new Error(err.detail || 'Failed to stop instance');
+            }
+            return resp.json();
+        }
+
+        // ─── Render ─────────────────────────────────────────────────────────
+        function getAccentClass(state) {
+            if (state === 'running') return 'running';
+            if (state === 'stopped') return 'stopped';
+            if (state === 'pending' || state === 'stopping' || state === 'shutting-down') return 'pending';
+            return 'default';
+        }
+
+        function renderInstances(instances) {
+            const list = document.getElementById('instancesList');
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('instanceCount').innerHTML = 
+                `<i class="fas fa-circle" style="font-size: 7px; margin-right: 4px;"></i> ${instances.length} instances`;
+
+            list.innerHTML = instances.map(inst => `
+                <div class="instance-card" id="card-${inst.id}">
+                    <div class="card-accent ${getAccentClass(inst.state)}"></div>
+                    <div class="card-info" style="padding-left: 16px;">
+                        <div class="card-name-row">
+                            <span class="card-name">${inst.name}</span>
+                            <span class="state-badge ${getAccentClass(inst.state)}">
+                                <span class="dot"></span>
+                                ${inst.state}
+                            </span>
+                        </div>
+                        <div class="card-meta">
+                            <span class="card-id">
+                                ${inst.country && FLAGS[inst.country] ? `<img src="${FLAGS[inst.country]}" alt="${inst.country}" style="width: 20px; height: 15px; border-radius: 2px; margin-right: 6px; vertical-align: middle;">` : ''}
+                                ${inst.id}
+                            </span>
+                            ${inst.override ? `<span class="card-override"><i class="fas fa-clock"></i> Override until ${inst.override} UTC</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <select class="override-select" id="hours-${inst.id}" title="Override duration">
+                            <option value="1">⏱ 1h</option>
+                            <option value="2">⏱ 2h</option>
+                            <option value="3" selected>⏱ 3h</option>
+                            <option value="4">⏱ 4h</option>
+                            <option value="6">⏱ 6h</option>
+                            <option value="8">⏱ 8h</option>
+                        </select>
+                        <button class="action-btn start-btn" id="start-${inst.id}"
+                                onclick="handleStart('${inst.id}')"
+                                ${inst.state === 'running' || inst.state === 'pending' ? 'disabled' : ''}>
+                            <span class="spinner"></span>
+                            <i class="fas fa-play btn-icon"></i> Start
+                        </button>
+                        <button class="action-btn stop-btn" id="stop-${inst.id}"
+                                onclick="handleStop('${inst.id}')"
+                                ${inst.state === 'stopped' || inst.state === 'stopping' ? 'disabled' : ''}>
+                            <span class="spinner"></span>
+                            <i class="fas fa-stop btn-icon"></i> Stop
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ─── Handlers ───────────────────────────────────────────────────────
+        async function handleStart(instanceId) {
+            const btn = document.getElementById(`start-${instanceId}`);
+            const hours = parseInt(document.getElementById(`hours-${instanceId}`).value);
+            
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            try {
+                const result = await startInstance(instanceId, hours);
+                showToast(`✅ ${result.message}`);
+                // Refresh after a short delay to show new state
+                setTimeout(refreshInstances, 1500);
+            } catch (e) {
+                showToast(`Failed: ${e.message}`, 'error');
+                showError(e.message);
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+
+        async function handleStop(instanceId) {
+            const btn = document.getElementById(`stop-${instanceId}`);
+            
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            try {
+                const result = await stopInstance(instanceId);
+                showToast(`🛑 ${result.message}`);
+                setTimeout(refreshInstances, 1500);
+            } catch (e) {
+                showToast(`Failed: ${e.message}`, 'error');
+                showError(e.message);
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+
+        async function refreshInstances() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('spinning');
+
+            try {
+                const instances = await fetchInstances();
+                renderInstances(instances);
+                showToast('Instances refreshed', 'info');
+            } catch (e) {
+                showToast(`Error: ${e.message}`, 'error');
+                showError(`Could not connect to API. Is the backend running? (python3 app.py)`);
+                document.getElementById('loadingState').innerHTML = `
+                    <i class="fas fa-exclamation-triangle" style="animation:none; color:var(--color-red)"></i>
+                    <p style="margin-top:12px">Could not connect to backend</p>
+                    <p style="font-size:13px; color:var(--text-muted); margin-top:8px">
+                        Run <code style="background:rgba(255,255,255,0.08); padding:2px 8px; border-radius:5px; font-family:'JetBrains Mono',monospace; color:var(--color-green)">python3 app.py</code> 
+                        then open <code style="background:rgba(255,255,255,0.08); padding:2px 8px; border-radius:5px; font-family:'JetBrains Mono',monospace; color:var(--color-green)">http://localhost:5000/ec2</code>
+                    </p>
+                `;
+            } finally {
+                btn.classList.remove('spinning');
+            }
+        }
+
+        // ─── Init ───────────────────────────────────────────────────────────
+        refreshInstances();
+        // Auto-refresh every 30 seconds
+        setInterval(refreshInstances, 30000);
+    </script>
+</body>
+</html>
